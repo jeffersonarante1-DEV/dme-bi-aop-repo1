@@ -496,6 +496,8 @@ function OpeningGlobe() {
     root.setThemes([am5themesAnimated.new(root)])
     root._logo?.dispose()
 
+    const orbitPalette = [0x00e5ff, 0x5b8cff, 0xa78bff, 0xeafcff]
+
     const chart = root.container.children.push(
       am5map.MapChart.new(root, {
         projection: am5map.geoOrthographic(),
@@ -504,32 +506,22 @@ function OpeningGlobe() {
         wheelX: 'none',
         wheelY: 'none',
         pinchZoom: false,
-        rotationX: -20,
-        rotationY: -18,
+        rotationX: -36,
+        rotationY: -12,
         maxZoomLevel: 1,
         minZoomLevel: 1,
         homeGeoPoint: { longitude: 0, latitude: 0 },
       }),
     )
 
-    const oceanSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {}))
-    oceanSeries.mapPolygons.template.setAll({
-      fill: am5.color(0x000000),
-      stroke: am5.color(0x000000),
-      strokeOpacity: 0,
-    })
-    oceanSeries.data.push({
-      geometry: am5map.getGeoRectangle(90, 180, -90, -180),
-    })
-
     chart.series.push(
       am5map.GraticuleSeries.new(root, {
         step: 10,
-        stroke: am5.color(0x0088ff),
+        stroke: am5.color(0x62eaff),
       }),
     ).mapLines.template.setAll({
-      strokeOpacity: 0.10,
-      strokeWidth: 0.5,
+      strokeOpacity: 0.12,
+      strokeWidth: 0.55,
     })
 
     const polygonSeries = chart.series.push(
@@ -541,42 +533,43 @@ function OpeningGlobe() {
 
     polygonSeries.mapPolygons.template.setAll({
       interactive: false,
-      fill: am5.color(0x0a0e1a),
-      stroke: am5.color(0x1a2a4a),
-      strokeOpacity: 0.85,
-      strokeWidth: 0.9,
+      fill: am5.color(0x113c52),
+      stroke: am5.color(0x70f2ff),
+      fillOpacity: 0.86,
+      strokeOpacity: 0.58,
+      strokeWidth: 0.95,
     })
 
     polygonSeries.events.on('datavalidated', () => {
       polygonSeries.mapPolygons.each((polygon) => {
         const dataItem = polygon.dataItem
         const index = polygonSeries.dataItems.indexOf(dataItem)
-        polygon.set('fill', am5.color(index % 2 === 0 ? 0x0a0e1a : 0x0e1525))
+        polygon.set('fill', am5.color(index % 2 === 0 ? 0x113c52 : 0x0e3148))
       })
     })
 
     const networkNodes = [
-      { title: 'Manila',           coordinates: [120.9842,  14.5995], color: 0xffb347 },
-      { title: 'Singapore',        coordinates: [103.8198,   1.3521], color: 0xffd27f },
-      { title: 'Tokyo',            coordinates: [139.6917,  35.6895], color: 0xff8c00 },
-      { title: 'Dubai',            coordinates: [ 55.2708,  25.2048], color: 0xffa500 },
-      { title: 'London',           coordinates: [ -0.1276,  51.5072], color: 0xffcc44 },
-      { title: 'New York',         coordinates: [-74.0060,  40.7128], color: 0xe8901a },
-      { title: 'Sydney',           coordinates: [151.2093, -33.8688], color: 0xf5c842 },
-      { title: 'Kuala Lumpur',     coordinates: [101.6869,   3.1390], color: 0xffaa33 },
-      { title: 'Bangkok',          coordinates: [100.5018,  13.7563], color: 0xffb84d },
-      { title: 'Ho Chi Minh City', coordinates: [106.6297,  10.8231], color: 0xffc966 },
-      { title: 'Jakarta',          coordinates: [106.8456,  -6.2088], color: 0xe89520 },
-      { title: 'Cebu',             coordinates: [123.8854,  10.3157], color: 0xf0a830 },
-      { title: 'Davao',            coordinates: [125.6128,   7.0707], color: 0xffd060 },
-      { title: 'Paris',            coordinates: [  2.3522,  48.8566], color: 0xffa040 },
-      { title: 'Mumbai',           coordinates: [ 72.8777,  19.0760], color: 0xffb347 },
-      { title: 'São Paulo',        coordinates: [-46.6333, -23.5505], color: 0xffd27f },
-      { title: 'Lagos',            coordinates: [  3.3792,   6.5244], color: 0xff8c00 },
-      { title: 'Riyadh',           coordinates: [ 46.6753,  24.7136], color: 0xffa500 },
-      { title: 'Beijing',          coordinates: [116.4074,  39.9042], color: 0xffcc44 },
-      { title: 'Toronto',          coordinates: [-79.3832,  43.6532], color: 0xe8901a },
-      { title: 'Seoul',            coordinates: [126.9780,  37.5665], color: 0xf5c842 },
+      { title: 'Manila',           coordinates: [120.9842,  14.5995], color: 0x00e5ff },
+      { title: 'Singapore',        coordinates: [103.8198,   1.3521], color: 0xeafcff },
+      { title: 'Tokyo',            coordinates: [139.6917,  35.6895], color: 0x5b8cff },
+      { title: 'Dubai',            coordinates: [ 55.2708,  25.2048], color: 0xa78bff },
+      { title: 'London',           coordinates: [ -0.1276,  51.5072], color: 0xeafcff },
+      { title: 'New York',         coordinates: [-74.0060,  40.7128], color: 0x00e5ff },
+      { title: 'Sydney',           coordinates: [151.2093, -33.8688], color: 0x5b8cff },
+      { title: 'Kuala Lumpur',     coordinates: [101.6869,   3.1390], color: 0xa78bff },
+      { title: 'Bangkok',          coordinates: [100.5018,  13.7563], color: 0x00e5ff },
+      { title: 'Ho Chi Minh City', coordinates: [106.6297,  10.8231], color: 0xeafcff },
+      { title: 'Jakarta',          coordinates: [106.8456,  -6.2088], color: 0x5b8cff },
+      { title: 'Cebu',             coordinates: [123.8854,  10.3157], color: 0xa78bff },
+      { title: 'Davao',            coordinates: [125.6128,   7.0707], color: 0x00e5ff },
+      { title: 'Paris',            coordinates: [  2.3522,  48.8566], color: 0xeafcff },
+      { title: 'Mumbai',           coordinates: [ 72.8777,  19.0760], color: 0x5b8cff },
+      { title: 'São Paulo',        coordinates: [-46.6333, -23.5505], color: 0xa78bff },
+      { title: 'Lagos',            coordinates: [  3.3792,   6.5244], color: 0x00e5ff },
+      { title: 'Riyadh',           coordinates: [ 46.6753,  24.7136], color: 0xeafcff },
+      { title: 'Beijing',          coordinates: [116.4074,  39.9042], color: 0x5b8cff },
+      { title: 'Toronto',          coordinates: [-79.3832,  43.6532], color: 0xa78bff },
+      { title: 'Seoul',            coordinates: [126.9780,  37.5665], color: 0x00e5ff },
     ]
 
     const networkLineSeries = chart.series.push(am5map.MapLineSeries.new(root, {}))
@@ -584,8 +577,8 @@ function OpeningGlobe() {
     networkLineSeries.mapLines.template.setAll({
       interactive: false,
       stroke: am5.color(0x00e5ff),
-      strokeOpacity: 0.9,
-      strokeWidth: 1.6,
+      strokeOpacity: 0.74,
+      strokeWidth: 1.2,
       strokeDasharray: [1000, 1000],
       strokeDashoffset: 1000,
     })
@@ -627,9 +620,9 @@ function OpeningGlobe() {
         am5.Circle.new(root, {
           radius: 11,
           fill: color,
-          fillOpacity: 0.12,
+          fillOpacity: 0.16,
           stroke: color,
-          strokeOpacity: 0.36,
+          strokeOpacity: 0.52,
           strokeWidth: 1,
         }),
       )
@@ -641,7 +634,7 @@ function OpeningGlobe() {
           fillOpacity: 1,
           stroke: am5.color(0xffffff),
           strokeOpacity: 0.84,
-          strokeWidth: 1.2,
+          strokeWidth: 1.4,
         }),
       )
 
@@ -696,9 +689,9 @@ function OpeningGlobe() {
     const randomLineSeries = chart.series.push(am5map.MapLineSeries.new(root, {}))
     randomLineSeries.mapLines.template.setAll({
       interactive: false,
-      stroke: am5.color(0x00ccff),
-      strokeOpacity: 0.18,
-      strokeWidth: 0.7,
+      stroke: am5.color(0x9bf7ff),
+      strokeOpacity: 0.16,
+      strokeWidth: 0.58,
       strokeDasharray: [1000, 1000],
       strokeDashoffset: 1000,
     })
@@ -727,12 +720,13 @@ function OpeningGlobe() {
 
     const randomNodeSeries = chart.series.push(am5map.MapPointSeries.new(root, {}))
     randomNodeSeries.bullets.push(() => {
-      const size = 1.2 + Math.random() * 2.2
-      const opacity = 0.3 + Math.random() * 0.5
+      const color = orbitPalette[Math.floor(Math.random() * orbitPalette.length)]
+      const size = 1 + Math.random() * 2.1
+      const opacity = 0.28 + Math.random() * 0.56
       return am5.Bullet.new(root, {
         sprite: am5.Circle.new(root, {
           radius: size,
-          fill: am5.color(0x00ccff),
+          fill: am5.color(color),
           fillOpacity: opacity,
           strokeOpacity: 0,
         }),
@@ -766,8 +760,8 @@ function OpeningGlobe() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
-    function drawOrbit(cx, cy, r, angle, scaleY, alpha, color, sweepOffset, label) {
-      const sweep = Math.PI * 1.65
+    function drawOrbit(cx, cy, r, angle, scaleY, alpha, color, sweepOffset, lineWidth = 1.1) {
+      const sweep = Math.PI * 1.48
       const endAngle = sweepOffset + sweep
 
       ctx.save()
@@ -777,8 +771,8 @@ function OpeningGlobe() {
       ctx.beginPath()
       ctx.ellipse(0, 0, r, r, 0, 0, Math.PI * 2)
       ctx.strokeStyle = `rgba(${color}, 0.12)`
-      ctx.setLineDash([3, 8])
-      ctx.lineWidth = 0.7
+      ctx.setLineDash([2, 10])
+      ctx.lineWidth = 0.55
       ctx.stroke()
       ctx.setLineDash([])
       ctx.shadowBlur = 28
@@ -786,23 +780,9 @@ function OpeningGlobe() {
       ctx.beginPath()
       ctx.ellipse(0, 0, r, r, 0, sweepOffset, endAngle)
       ctx.strokeStyle = `rgba(${color}, ${alpha})`
-      ctx.lineWidth = 1.4
+      ctx.lineWidth = lineWidth
       ctx.lineCap = 'round'
       ctx.stroke()
-      ctx.shadowBlur = 0
-      ctx.restore()
-
-      const lx = r * Math.cos(endAngle)
-      const ly = r * scaleY * Math.sin(endAngle)
-      const sx = cx + lx * Math.cos(angle) - ly * Math.sin(angle)
-      const sy = cy + lx * Math.sin(angle) + ly * Math.cos(angle)
-      ctx.save()
-      ctx.font = '500 10px "Courier New", monospace'
-      ctx.letterSpacing = '0.12em'
-      ctx.fillStyle = `rgba(${color}, 0.72)`
-      ctx.shadowBlur = 8
-      ctx.shadowColor = `rgba(${color}, 0.9)`
-      ctx.fillText(label, sx + 6, sy + 4)
       ctx.shadowBlur = 0
       ctx.restore()
     }
@@ -824,7 +804,10 @@ function OpeningGlobe() {
       ctx.arc(cx, cy, globeR, 0, Math.PI * 2, true)
       ctx.clip('evenodd')
 
-      drawOrbit(cx, cy, r, -0.5 - orbitAngle * 0.22,         0.26, 0.55, '0, 180, 255', Math.PI * 0.4, 'ORBIT #2')
+      drawOrbit(cx, cy, r * 1.02, -0.5 - orbitAngle * 0.22, 0.26, 0.46, '0, 229, 255', Math.PI * 0.4, 1.1)
+      drawOrbit(cx, cy, r * 0.96, 0.22 + orbitAngle * 0.15, 0.42, 0.32, '167, 139, 255', Math.PI * 1.12, 0.85)
+      drawOrbit(cx, cy, r * 1.12, -1.1 + orbitAngle * 0.1, 0.18, 0.26, '234, 252, 255', Math.PI * 1.74, 0.75)
+      drawOrbit(cx, cy, r * 1.05, 1.34 - orbitAngle * 0.13, 0.58, 0.2, '91, 140, 255', Math.PI * 0.92, 0.7)
 
       ctx.restore()
 
@@ -1121,35 +1104,12 @@ function App() {
 
   return (
     <main className="hero-shell">
-      {/* Page 01 begin: opening globe */}
-      <section
-        id={PAGE_IDS.opening}
-        data-page-id={PAGE_IDS.opening}
-        ref={(section) => {
-          sectionRefs.current[0] = section
-        }}
-        className="blank-section page-opening-globe"
-        aria-label="Blank opening page"
-      >
-        <RandomStars />
-        <OpeningGlobe />
-        <div className="globe-vignette" aria-hidden="true" />
-        <div className="globe-hero-text">
-          <p className="globe-tagline">REAL-TIME • GLOBAL • CONNECTED</p>
-          <p className="globe-sub-tagline">Secure • Scalable • Intelligent</p>
-          <button className="globe-scroll-btn" aria-label="Scroll to next section">
-            <span className="material-symbols-outlined">expand_more</span>
-          </button>
-        </div>
-      </section>
-      {/* Page 01 end: opening globe */}
-
-      {/* Page 02 begin: intro */}
+      {/* Page 01 begin: intro */}
       <section
         id={PAGE_IDS.intro}
         data-page-id={PAGE_IDS.intro}
         ref={(section) => {
-          sectionRefs.current[1] = section
+          sectionRefs.current[0] = section
           heroRef.current = section
         }}
         className="welcome-hero page-intro"
@@ -1160,6 +1120,7 @@ function App() {
         <canvas ref={canvasRef} className="data-globe" aria-hidden="true"></canvas>
 
         <div className="hero-content">
+          <p className="hero-kicker">DME-BI | Delivering Meaningful Experience</p>
           <h1 ref={titleRef} id="welcome-title">
             <span>Centralized</span>
             <span className="title-gradient">Transformation</span>
@@ -1172,14 +1133,14 @@ function App() {
           </p>
         </div>
       </section>
-      {/* Page 02 end: intro */}
+      {/* Page 01 end: intro */}
 
-      {/* Page 03 begin: what we've delivered */}
+      {/* Page 02 begin: what we've delivered */}
       <section
         id={PAGE_IDS.delivered}
         data-page-id={PAGE_IDS.delivered}
         ref={(section) => {
-          sectionRefs.current[2] = section
+          sectionRefs.current[1] = section
           deliveredRef.current = section
         }}
         className="delivered-section delivered-cards-section page-delivered"
@@ -1194,16 +1155,18 @@ function App() {
               <FlipCard card={card} key={card.id} />
             ))}
           </div>
+
+          <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 03 end: what we've delivered */}
+      {/* Page 02 end: what we've delivered */}
 
-      {/* Page 04 begin: secret sauce */}
+      {/* Page 03 begin: secret sauce */}
       <section
         id={PAGE_IDS.secretSauce}
         data-page-id={PAGE_IDS.secretSauce}
         ref={(section) => {
-          sectionRefs.current[3] = section
+          sectionRefs.current[2] = section
           secretSauceRef.current = section
         }}
         className="delivered-section secret-sauce-section page-secret-sauce"
@@ -1221,16 +1184,18 @@ function App() {
               <FlipCard card={card} key={card.id} />
             ))}
           </div>
+
+          <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 04 end: secret sauce */}
+      {/* Page 03 end: secret sauce */}
 
-      {/* Page 05 begin: commitment */}
+      {/* Page 04 begin: commitment */}
       <section
         id={PAGE_IDS.commitment}
         data-page-id={PAGE_IDS.commitment}
         ref={(section) => {
-          sectionRefs.current[4] = section
+          sectionRefs.current[3] = section
         }}
         className="title-section page-commitment"
         aria-labelledby="commitment-title"
@@ -1293,16 +1258,17 @@ function App() {
           <div className="commitment-right-panel" aria-hidden="true">
             <CommitmentNetworkCanvas />
           </div>
+          <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 05 end: commitment */}
+      {/* Page 04 end: commitment */}
 
-      {/* Page 06 begin: what we need */}
+      {/* Page 05 begin: what we need */}
       <section
         id={PAGE_IDS.needs}
         data-page-id={PAGE_IDS.needs}
         ref={(section) => {
-          sectionRefs.current[5] = section
+          sectionRefs.current[4] = section
         }}
         className="title-section page-needs"
         aria-labelledby="need-title"
@@ -1338,24 +1304,51 @@ function App() {
           <div className="needs-right-panel" aria-hidden="true">
             <CommitmentNetworkCanvas />
           </div>
+          <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 06 end: what we need */}
+      {/* Page 05 end: what we need */}
 
-      {/* Page 07 begin: thank you */}
+      {/* Page 06 begin: thank you */}
       <section
         id={PAGE_IDS.thankYou}
         data-page-id={PAGE_IDS.thankYou}
         ref={(section) => {
-          sectionRefs.current[6] = section
+          sectionRefs.current[5] = section
         }}
         className="title-section page-thank-you"
         aria-labelledby="thank-you-title"
       >
         <RandomStars />
-        <h2 id="thank-you-title">Thank you.</h2>
+        <div className="thank-you-copy">
+          <h2 id="thank-you-title">Thank you.</h2>
+          <p>DME-BI | Delivering Meaningful Experience</p>
+        </div>
       </section>
-      {/* Page 07 end: thank you */}
+      {/* Page 06 end: thank you */}
+
+      {/* Page 07 begin: closing globe */}
+      <section
+        id={PAGE_IDS.opening}
+        data-page-id={PAGE_IDS.opening}
+        ref={(section) => {
+          sectionRefs.current[6] = section
+        }}
+        className="blank-section page-opening-globe"
+        aria-label="Closing global network page"
+      >
+        <RandomStars />
+        <OpeningGlobe />
+        <div className="globe-vignette" aria-hidden="true" />
+        <div className="globe-hero-text">
+          <p className="globe-tagline">REAL-TIME • GLOBAL • CONNECTED</p>
+          <p className="globe-sub-tagline">Secure • Scalable • Intelligent</p>
+          <button className="globe-scroll-btn" aria-label="Closing section indicator">
+            <span className="material-symbols-outlined">expand_more</span>
+          </button>
+        </div>
+      </section>
+      {/* Page 07 end: closing globe */}
     </main>
   )
 }
