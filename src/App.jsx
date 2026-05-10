@@ -8,6 +8,7 @@ import './App.css'
 
 // Stable page IDs keep scroll targets, CSS scopes, and future navigation isolated per slide.
 const PAGE_IDS = Object.freeze({
+  starfield: 'page-starfield',
   opening: 'page-opening-globe',
   intro: 'page-intro',
   delivered: 'page-delivered',
@@ -378,6 +379,289 @@ const CommitmentNetworkCanvas = memo(function CommitmentNetworkCanvas() {
   return <canvas ref={canvasRef} className="commitment-network-canvas" aria-hidden="true" />
 })
 
+const CircuitBoardCanvas = memo(function CircuitBoardCanvas() {
+  const canvasRef = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    let rafId = 0
+    let nodes = []
+    let traces = []
+    let crawlers = []
+    let heroCrawlers = []
+    const T0 = performance.now()
+
+    function resize() {
+      const el = canvas.parentElement
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = el.clientWidth
+      const h = el.clientHeight
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      canvas.style.width = w + 'px'
+      canvas.style.height = h + 'px'
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      build(w, h)
+    }
+
+    function spawnCrawler() {
+      if (!traces.length) return
+      const tr = traces[Math.floor(Math.random() * traces.length)]
+      crawlers.push({
+        tr,
+        t: Math.random(),
+        dir: Math.random() < 0.5 ? 1 : -1,
+        speed: 0.00016 + Math.random() * 0.00020,
+        col: Math.random() < 0.55 ? '0,229,255' : Math.random() < 0.6 ? '167,139,255' : '255,91,205',
+        sz: 1.1 + Math.random() * 0.9,
+      })
+    }
+
+    function spawnHeroCrawler() {
+      if (!traces.length) return
+      // Prefer longer traces so the comet has room to travel
+      const pool = traces.filter(tr => {
+        let len = 0
+        for (let i = 1; i < tr.pts.length; i++)
+          len += Math.hypot(tr.pts[i].x - tr.pts[i - 1].x, tr.pts[i].y - tr.pts[i - 1].y)
+        return len > 100
+      })
+      const src = pool.length > 0 ? pool : traces
+      const tr = src[Math.floor(Math.random() * src.length)]
+      const dir = Math.random() < 0.5 ? 1 : -1
+      heroCrawlers.push({
+        tr,
+        t: dir === 1 ? 0 : 1,
+        dir,
+        speed: 0.00055 + Math.random() * 0.00035,
+        col: Math.random() < 0.5 ? '0,229,255' : '255,60,172',
+        tailSteps: 14,
+        stepBack: 0.018,
+      })
+    }
+
+    function build(w, h) {
+      nodes = []; traces = []; crawlers = []
+
+      const G = Math.round(Math.min(w, h) / 13)
+      const cols = Math.ceil(w / G) + 1
+      const rows = Math.ceil(h / G) + 1
+      const grid = new Map()
+
+      // Jittered grid nodes
+      for (let r = 0; r <= rows; r++) {
+        for (let c = 0; c <= cols; c++) {
+          if (Math.random() > 0.46) continue
+          const x = Math.min(w - 2, Math.max(2, c * G + (Math.random() - 0.5) * G * 0.10))
+          const y = Math.min(h - 2, Math.max(2, r * G + (Math.random() - 0.5) * G * 0.10))
+          const rnd = Math.random()
+          const nd = {
+            x, y, c, r,
+            kind: rnd < 0.05 ? 'chip' : rnd < 0.20 ? 'via' : 'pad',
+            col: Math.random() < 0.60 ? '0,229,255' : Math.random() < 0.55 ? '167,139,255' : '255,91,205',
+            ph: Math.random() * Math.PI * 2,
+            spd: 0.28 + Math.random() * 0.52,
+          }
+          nodes.push(nd)
+          grid.set(`${c},${r}`, nd)
+        }
+      }
+
+      // Long horizontal + vertical bus traces
+      const busN = Math.max(6, Math.round(Math.min(w, h) / G * 0.45))
+      for (let i = 0; i < busN; i++) {
+        if (Math.random() < 0.5) {
+          const y = (0.06 + Math.random() * 0.88) * h
+          const x0 = Math.random() * w * 0.12
+          const x1 = w * (0.82 + Math.random() * 0.14)
+          traces.push({ pts: [{ x: x0, y }, { x: x1, y }], al: 0.05 + Math.random() * 0.05, lw: Math.random() < 0.25 ? 1.3 : 0.65 })
+          nodes.push({ x: x0, y, c: -1, r: -1, kind: 'pad', col: '0,229,255', ph: Math.random() * Math.PI * 2, spd: 0.3 + Math.random() * 0.4 })
+          nodes.push({ x: x1, y, c: -1, r: -1, kind: 'pad', col: '0,229,255', ph: Math.random() * Math.PI * 2, spd: 0.3 + Math.random() * 0.4 })
+        } else {
+          const x = (0.06 + Math.random() * 0.88) * w
+          const y0 = Math.random() * h * 0.10
+          const y1 = h * (0.84 + Math.random() * 0.12)
+          traces.push({ pts: [{ x, y: y0 }, { x, y: y1 }], al: 0.05 + Math.random() * 0.05, lw: Math.random() < 0.25 ? 1.3 : 0.65 })
+          nodes.push({ x, y: y0, c: -1, r: -1, kind: 'pad', col: '167,139,255', ph: Math.random() * Math.PI * 2, spd: 0.3 + Math.random() * 0.4 })
+          nodes.push({ x, y: y1, c: -1, r: -1, kind: 'pad', col: '167,139,255', ph: Math.random() * Math.PI * 2, spd: 0.3 + Math.random() * 0.4 })
+        }
+      }
+
+      // Orthogonal L-shaped traces between nearby grid nodes
+      const seen = new Set()
+      nodes.forEach(a => {
+        if (a.c === -1) return
+        for (let dc = -2; dc <= 2; dc++) {
+          for (let dr = -2; dr <= 2; dr++) {
+            if (!dc && !dr) continue
+            const b = grid.get(`${a.c + dc},${a.r + dr}`)
+            if (!b) continue
+            const key = a.x <= b.x
+              ? `${a.x.toFixed(1)}|${a.y.toFixed(1)}-${b.x.toFixed(1)}|${b.y.toFixed(1)}`
+              : `${b.x.toFixed(1)}|${b.y.toFixed(1)}-${a.x.toFixed(1)}|${a.y.toFixed(1)}`
+            if (seen.has(key)) continue
+            if (Math.random() > 0.40) continue
+            if (Math.hypot(b.x - a.x, b.y - a.y) < G * 0.4) continue
+            seen.add(key)
+            const mid = Math.random() < 0.5 ? { x: b.x, y: a.y } : { x: a.x, y: b.y }
+            traces.push({ pts: [{ x: a.x, y: a.y }, mid, { x: b.x, y: b.y }], al: 0.07 + Math.random() * 0.08, lw: Math.random() < 0.10 ? 1.2 : 0.65 })
+          }
+        }
+      })
+
+      const crawlerN = Math.max(10, Math.floor(traces.length * 0.14))
+      for (let i = 0; i < crawlerN; i++) spawnCrawler()
+
+      heroCrawlers = []
+      spawnHeroCrawler()
+      spawnHeroCrawler()
+    }
+
+    function draw() {
+      const t = (performance.now() - T0) / 1000
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = canvas.width / dpr
+      const h = canvas.height / dpr
+      ctx.clearRect(0, 0, w, h)
+
+      // Traces
+      traces.forEach(({ pts, al, lw }) => {
+        ctx.beginPath()
+        ctx.moveTo(pts[0].x, pts[0].y)
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
+        ctx.strokeStyle = `rgba(0,210,255,${al})`
+        ctx.lineWidth = lw
+        ctx.lineJoin = 'miter'
+        ctx.stroke()
+      })
+
+      // Nodes
+      nodes.forEach(nd => {
+        const pulse = Math.sin(t * nd.spd + nd.ph)
+        const al = 0.22 + pulse * 0.16
+
+        if (nd.kind === 'chip') {
+          const sz = 11 + pulse * 1.2
+          ctx.strokeStyle = `rgba(${nd.col},${al * 0.68})`
+          ctx.lineWidth = 0.55
+          ctx.strokeRect(nd.x - sz / 2, nd.y - sz / 2, sz, sz)
+          // Pin marks
+          for (let p = 0; p < 3; p++) {
+            const py = nd.y - sz / 2 + sz * (0.22 + p * 0.28)
+            ctx.beginPath(); ctx.moveTo(nd.x - sz / 2, py); ctx.lineTo(nd.x - sz / 2 - 3.5, py); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(nd.x + sz / 2, py); ctx.lineTo(nd.x + sz / 2 + 3.5, py); ctx.stroke()
+          }
+          ctx.beginPath()
+          ctx.arc(nd.x, nd.y, 1.3, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${nd.col},${al + 0.1})`
+          ctx.fill()
+
+        } else if (nd.kind === 'via') {
+          ctx.beginPath()
+          ctx.arc(nd.x, nd.y, 4.2, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(${nd.col},${al * 0.5})`
+          ctx.lineWidth = 0.65
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.arc(nd.x, nd.y, 2.1, 0, Math.PI * 2)
+          ctx.shadowBlur = 7
+          ctx.shadowColor = `rgba(${nd.col},0.65)`
+          ctx.fillStyle = `rgba(${nd.col},${al})`
+          ctx.fill()
+          ctx.shadowBlur = 0
+
+        } else {
+          ctx.beginPath()
+          ctx.arc(nd.x, nd.y, 1.6, 0, Math.PI * 2)
+          ctx.shadowBlur = 5
+          ctx.shadowColor = `rgba(${nd.col},0.5)`
+          ctx.fillStyle = `rgba(${nd.col},${al + 0.08})`
+          ctx.fill()
+          ctx.shadowBlur = 0
+        }
+      })
+
+      // Regular crawlers
+      crawlers = crawlers.filter(c => {
+        c.t += c.speed * c.dir
+        if (c.t > 1 || c.t < 0) { spawnCrawler(); return false }
+        const { pts } = c.tr
+        const seg = c.t * (pts.length - 1)
+        const si = Math.min(Math.floor(seg), pts.length - 2)
+        const st = seg - si
+        const x = pts[si].x + (pts[si + 1].x - pts[si].x) * st
+        const y = pts[si].y + (pts[si + 1].y - pts[si].y) * st
+        ctx.beginPath()
+        ctx.arc(x, y, c.sz, 0, Math.PI * 2)
+        ctx.shadowBlur = 12
+        ctx.shadowColor = `rgba(${c.col},0.95)`
+        ctx.fillStyle = `rgba(${c.col},0.9)`
+        ctx.fill()
+        ctx.shadowBlur = 0
+        return true
+      })
+
+      // Hero crawlers — large comet with a fading tail
+      function sampleTrace(pts, t) {
+        const seg = Math.max(0, Math.min(1, t)) * (pts.length - 1)
+        const si = Math.min(Math.floor(seg), pts.length - 2)
+        const st = seg - si
+        return {
+          x: pts[si].x + (pts[si + 1].x - pts[si].x) * st,
+          y: pts[si].y + (pts[si + 1].y - pts[si].y) * st,
+        }
+      }
+
+      heroCrawlers = heroCrawlers.filter(c => {
+        c.t += c.speed * c.dir
+        if (c.t > 1 || c.t < 0) { spawnHeroCrawler(); return false }
+
+        const { tr, col, tailSteps, stepBack, dir } = c
+        const { pts } = tr
+
+        // Draw tail — steps behind the head, each smaller and dimmer
+        for (let j = tailSteps; j >= 1; j--) {
+          const tBack = c.t - dir * j * stepBack
+          const pos = sampleTrace(pts, tBack)
+          const frac = 1 - j / tailSteps
+          ctx.beginPath()
+          ctx.arc(pos.x, pos.y, 3.5 * frac + 0.4, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${col},${frac * 0.45})`
+          ctx.fill()
+        }
+
+        // Draw head
+        const head = sampleTrace(pts, c.t)
+        ctx.beginPath()
+        ctx.arc(head.x, head.y, 5, 0, Math.PI * 2)
+        ctx.shadowBlur = 26
+        ctx.shadowColor = `rgba(${col},1)`
+        ctx.fillStyle = `rgba(${col},1)`
+        ctx.fill()
+        // Outer halo ring
+        ctx.beginPath()
+        ctx.arc(head.x, head.y, 10, 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(${col},0.28)`
+        ctx.lineWidth = 1.8
+        ctx.stroke()
+        ctx.shadowBlur = 0
+
+        return true
+      })
+
+      rafId = requestAnimationFrame(draw)
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
+    draw()
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener('resize', resize) }
+  }, [])
+
+  return <canvas ref={canvasRef} className="circuit-board-canvas" aria-hidden="true" />
+})
+
 const ConstellationArt = memo(function ConstellationArt({ card }) {
   return (
     <div className={`constellation-art ${card.id}`} style={card.motion} aria-hidden="true">
@@ -456,6 +740,83 @@ const FlipCard = memo(function FlipCard({ card }) {
   )
 })
 
+const NEON_LABELS = [
+  'UKG | Overtime', 'UKG | Schedules', 'UKG | Time-In/Time-Out',
+  'UKG | HR Cases', 'UKG | Recruitment Data', 'UKG | Employment Data',
+  'UKG | Recruitment Candidate Data', 'InContact Phone Data', 'QA Data',
+  'Power BI Dashboards', 'Azure SQL Server', 'Custom Web Development',
+  'Python Automation', 'ETL Pipelines', 'Data Validation',
+  'SalesForce Data', 'Client Data', 'Machine Learning',
+  'AI Insights', 'UKG | Coaching', 'Employee Birthday Greetings Automation',
+  'JIRA | IT Ticket Tracking', 'JIRA | BI Tickets Tracking',
+  'DocuPlanner', 'SharePoint Integration',
+]
+
+const NEON_COLORS = [
+  { hex: '#00e5ff', rgb: '0,229,255' },
+  { hex: '#ff3cac', rgb: '255,60,172' },
+  { hex: '#b44fff', rgb: '180,79,255' },
+  { hex: '#39ff14', rgb: '57,255,20' },
+  { hex: '#ff9500', rgb: '255,149,0' },
+  { hex: '#5b8cff', rgb: '91,140,255' },
+]
+
+// Text block sits at top:37%, x:20–80%, y:18–54% — pills are kept outside that zone.
+// 5 safe zones × 5 pills each = 25 pills total.
+const neonPills = NEON_LABELS.map((label, i) => {
+  const zone = i % 5          // which safe zone
+  const slot = Math.floor(i / 5) // 0–4 position within that zone
+  const jx = Math.sin(i * 2.718) * 2.0
+  const jy = Math.cos(i * 1.618) * 2.0
+
+  let x, y
+  if (zone === 0) {
+    // Left strip — x: 2–14%, full height
+    x = 2 + (slot % 3) * 4 + jx
+    y = 7 + slot * 17 + jy
+  } else if (zone === 1) {
+    // Right strip — x: 83–92%, full height
+    x = 83 + (slot % 3) * 3 + jx
+    y = 11 + slot * 17 + jy
+  } else if (zone === 2) {
+    // Top strip — x: 22–74%, y: 3–13%
+    x = 22 + slot * 13 + jx
+    y = 4 + (slot % 2) * 6 + jy
+  } else if (zone === 3) {
+    // Bottom-left — x: 3–43%, y: 59–87%
+    x = 3 + slot * 9 + jx
+    y = 60 + (slot % 3) * 10 + jy
+  } else {
+    // Bottom-right — x: 52–76%, y: 59–87%
+    x = 52 + slot * 6 + jx
+    y = 62 + (slot % 3) * 9 + jy
+  }
+
+  return {
+    id: i,
+    label,
+    x,
+    y,
+    color: NEON_COLORS[i % NEON_COLORS.length],
+    dur: `${9 + (i % 9) * 1.4}s`,
+    delay: `${(i % 13) * -1.15}s`,
+    flickerDur: `${5 + (i % 7) * 0.9}s`,
+    flickerDelay: `${(i % 11) * -0.8}s`,
+    dx: `${Math.sin(i * 1.31) * 10 + 4}px`,
+    dy: `${Math.cos(i * 0.91) * 8 + 3}px`,
+  }
+})
+
+const starfieldDots = Array.from({ length: 320 }, (_, i) => ({
+  id: `sf-${i}`,
+  x: (i * 41.3 + (i % 17) * 9.8) % 100,
+  y: (i * 67.1 + (i % 13) * 5.4) % 100,
+  size: i % 29 === 0 ? 2.6 : i % 11 === 0 ? 1.7 : i % 4 === 0 ? 1.1 : 0.55,
+  tone: i % 9 === 0 ? 'cyan' : i % 15 === 0 ? 'pink' : 'white',
+  delay: `${(i % 37) * -0.55}s`,
+  duration: `${7 + (i % 19) * 1.8}s`,
+}))
+
 const backgroundStars = Array.from({ length: 180 }, (_, index) => ({
   id: `bg-star-${index}`,
   x: (index * 29.7 + (index % 11) * 7.3) % 100,
@@ -486,17 +847,15 @@ function RandomStars() {
   )
 }
 
+
 function OpeningGlobe() {
   const globeRef = useRef(null)
-  const orbitCanvasRef = useRef(null)
 
   useEffect(() => {
     const root = am5.Root.new(globeRef.current)
 
     root.setThemes([am5themesAnimated.new(root)])
     root._logo?.dispose()
-
-    const orbitPalette = [0x00e5ff, 0x5b8cff, 0xa78bff, 0xeafcff]
 
     const chart = root.container.children.push(
       am5map.MapChart.new(root, {
@@ -507,7 +866,7 @@ function OpeningGlobe() {
         wheelY: 'none',
         pinchZoom: false,
         rotationX: -36,
-        rotationY: -12,
+        rotationY: -8,
         maxZoomLevel: 1,
         minZoomLevel: 1,
         homeGeoPoint: { longitude: 0, latitude: 0 },
@@ -517,10 +876,10 @@ function OpeningGlobe() {
     chart.series.push(
       am5map.GraticuleSeries.new(root, {
         step: 10,
-        stroke: am5.color(0x62eaff),
+        stroke: am5.color(0x2dcfe4),
       }),
     ).mapLines.template.setAll({
-      strokeOpacity: 0.12,
+      strokeOpacity: 0.08,
       strokeWidth: 0.55,
     })
 
@@ -533,18 +892,18 @@ function OpeningGlobe() {
 
     polygonSeries.mapPolygons.template.setAll({
       interactive: false,
-      fill: am5.color(0x113c52),
-      stroke: am5.color(0x70f2ff),
-      fillOpacity: 0.86,
-      strokeOpacity: 0.58,
-      strokeWidth: 0.95,
+      fill: am5.color(0x071526),
+      stroke: am5.color(0x1c91a8),
+      fillOpacity: 0.9,
+      strokeOpacity: 0.42,
+      strokeWidth: 0.72,
     })
 
     polygonSeries.events.on('datavalidated', () => {
       polygonSeries.mapPolygons.each((polygon) => {
         const dataItem = polygon.dataItem
         const index = polygonSeries.dataItems.indexOf(dataItem)
-        polygon.set('fill', am5.color(index % 2 === 0 ? 0x113c52 : 0x0e3148))
+        polygon.set('fill', am5.color(index % 2 === 0 ? 0x071526 : 0x091a2c))
       })
     })
 
@@ -681,157 +1040,18 @@ function OpeningGlobe() {
       easing: am5.ease.linear,
     })
 
-    const randomPoints = Array.from({ length: 60 }, () => [
-      -180 + Math.random() * 360,
-        -60 + Math.random() * 140,
-    ])
-
-    const randomLineSeries = chart.series.push(am5map.MapLineSeries.new(root, {}))
-    randomLineSeries.mapLines.template.setAll({
-      interactive: false,
-      stroke: am5.color(0x9bf7ff),
-      strokeOpacity: 0.16,
-      strokeWidth: 0.58,
-      strokeDasharray: [1000, 1000],
-      strokeDashoffset: 1000,
-    })
-    randomLineSeries.data.setAll(
-      Array.from({ length: 40 }, () => {
-        const a = randomPoints[Math.floor(Math.random() * randomPoints.length)]
-        const b = randomPoints[Math.floor(Math.random() * randomPoints.length)]
-        return { geometry: { type: 'LineString', coordinates: [a, b] } }
-      }),
-    )
-    randomLineSeries.events.on('datavalidated', () => {
-      let i = 0
-      randomLineSeries.mapLines.each((line) => {
-        line.animate({
-          key: 'strokeDashoffset',
-          from: 1000,
-          to: 0,
-          duration: 7000 + Math.random() * 6000,
-          loops: Infinity,
-          easing: am5.ease.linear,
-          delay: i * 300,
-        })
-        i++
-      })
-    })
-
-    const randomNodeSeries = chart.series.push(am5map.MapPointSeries.new(root, {}))
-    randomNodeSeries.bullets.push(() => {
-      const color = orbitPalette[Math.floor(Math.random() * orbitPalette.length)]
-      const size = 1 + Math.random() * 2.1
-      const opacity = 0.28 + Math.random() * 0.56
-      return am5.Bullet.new(root, {
-        sprite: am5.Circle.new(root, {
-          radius: size,
-          fill: am5.color(color),
-          fillOpacity: opacity,
-          strokeOpacity: 0,
-        }),
-      })
-    })
-    randomNodeSeries.data.setAll(
-      Array.from({ length: 80 }, () => ({
-        geometry: {
-          type: 'Point',
-          coordinates: [
-            -180 + Math.random() * 360,
-             -60 + Math.random() * 140,
-          ],
-        },
-      })),
-    )
-
     chart.appear(1200, 120)
     polygonSeries.appear(1000, 120)
-
-    const oc = orbitCanvasRef.current
-    const ctx = oc.getContext('2d')
-    let orbitFrame = 0
-    const orbitStart = performance.now()
-
-    function resizeOrbit() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const rect = oc.parentElement.getBoundingClientRect()
-      oc.width = rect.width * dpr
-      oc.height = rect.height * dpr
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    }
-
-    function drawOrbit(cx, cy, r, angle, scaleY, alpha, color, sweepOffset, lineWidth = 1.1) {
-      const sweep = Math.PI * 1.48
-      const endAngle = sweepOffset + sweep
-
-      ctx.save()
-      ctx.translate(cx, cy)
-      ctx.rotate(angle)
-      ctx.scale(1, scaleY)
-      ctx.beginPath()
-      ctx.ellipse(0, 0, r, r, 0, 0, Math.PI * 2)
-      ctx.strokeStyle = `rgba(${color}, 0.12)`
-      ctx.setLineDash([2, 10])
-      ctx.lineWidth = 0.55
-      ctx.stroke()
-      ctx.setLineDash([])
-      ctx.shadowBlur = 28
-      ctx.shadowColor = `rgba(${color}, 1)`
-      ctx.beginPath()
-      ctx.ellipse(0, 0, r, r, 0, sweepOffset, endAngle)
-      ctx.strokeStyle = `rgba(${color}, ${alpha})`
-      ctx.lineWidth = lineWidth
-      ctx.lineCap = 'round'
-      ctx.stroke()
-      ctx.shadowBlur = 0
-      ctx.restore()
-    }
-
-    function animateOrbits() {
-      const elapsed = (performance.now() - orbitStart) / 1000
-      const orbitAngle = elapsed * (Math.PI * 2 / 54)
-      const rect = oc.parentElement.getBoundingClientRect()
-      const cx = rect.width / 2
-      const cy = rect.height / 2
-      const r = Math.min(rect.width, rect.height) * 0.62
-
-      ctx.clearRect(0, 0, rect.width, rect.height)
-
-      const globeR = Math.min(rect.width, rect.height) * 0.47
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(0, 0, rect.width, rect.height)
-      ctx.arc(cx, cy, globeR, 0, Math.PI * 2, true)
-      ctx.clip('evenodd')
-
-      drawOrbit(cx, cy, r * 1.02, -0.5 - orbitAngle * 0.22, 0.26, 0.46, '0, 229, 255', Math.PI * 0.4, 1.1)
-      drawOrbit(cx, cy, r * 0.96, 0.22 + orbitAngle * 0.15, 0.42, 0.32, '167, 139, 255', Math.PI * 1.12, 0.85)
-      drawOrbit(cx, cy, r * 1.12, -1.1 + orbitAngle * 0.1, 0.18, 0.26, '234, 252, 255', Math.PI * 1.74, 0.75)
-      drawOrbit(cx, cy, r * 1.05, 1.34 - orbitAngle * 0.13, 0.58, 0.2, '91, 140, 255', Math.PI * 0.92, 0.7)
-
-      ctx.restore()
-
-      orbitFrame = requestAnimationFrame(animateOrbits)
-    }
-
-    resizeOrbit()
-    window.addEventListener('resize', resizeOrbit)
-    animateOrbits()
 
     return () => {
       rotation.stop()
       root.dispose()
-      cancelAnimationFrame(orbitFrame)
-      window.removeEventListener('resize', resizeOrbit)
     }
   }, [])
 
   return (
     <div className="opening-globe-wrap">
-      <div className="opening-globe-halo" aria-hidden="true" />
-      <div className="opening-globe-flare" aria-hidden="true" />
       <div ref={globeRef} className="opening-globe" aria-label="Rotating global network globe" />
-      <canvas ref={orbitCanvasRef} className="opening-globe-orbits" aria-hidden="true" />
     </div>
   )
 }
@@ -1104,12 +1324,67 @@ function App() {
 
   return (
     <main className="hero-shell">
-      {/* Page 01 begin: intro */}
+      {/* Page 01 begin: starfield */}
+      <section
+        id={PAGE_IDS.starfield}
+        data-page-id={PAGE_IDS.starfield}
+        ref={(section) => { sectionRefs.current[0] = section }}
+        className="blank-section page-starfield"
+        aria-label="Star field opening"
+      >
+        {starfieldDots.map((dot) => (
+          <span
+            key={dot.id}
+            className={`sf-dot ${dot.tone}`}
+            style={{
+              '--sf-x': `${dot.x}%`,
+              '--sf-y': `${dot.y}%`,
+              '--sf-size': `${dot.size}px`,
+              '--sf-delay': dot.delay,
+              '--sf-dur': dot.duration,
+            }}
+          />
+        ))}
+        <CircuitBoardCanvas />
+        <div className="starfield-hero-text">
+          <p className="starfield-hero-title">
+            <span>DME</span>
+            <span>DataVerse</span>
+            <span>Ecosystem</span>
+          </p>
+          <p className="starfield-hero-sub">Secured | Scalable | Reliable</p>
+        </div>
+        <p className="starfield-footer">DME-BI | Delivering Meaningful Experience</p>
+        {neonPills.map((pill) => (
+          <span
+            key={pill.id}
+            className="neon-pill"
+            style={{
+              left: `${pill.x}%`,
+              top: `${pill.y}%`,
+              color: pill.color.hex,
+              borderColor: pill.color.hex,
+              '--pill-dur': pill.dur,
+              '--pill-delay': pill.delay,
+              '--pill-flicker-dur': pill.flickerDur,
+              '--pill-flicker-delay': pill.flickerDelay,
+              '--pill-dx': pill.dx,
+              '--pill-dy': pill.dy,
+              boxShadow: `0 0 5px ${pill.color.hex}, 0 0 16px rgba(${pill.color.rgb},0.58), 0 0 32px rgba(${pill.color.rgb},0.28), inset 0 0 10px rgba(${pill.color.rgb},0.06)`,
+            }}
+          >
+            {pill.label}
+          </span>
+        ))}
+      </section>
+      {/* Page 01 end: starfield */}
+
+      {/* Page 02 begin: intro */}
       <section
         id={PAGE_IDS.intro}
         data-page-id={PAGE_IDS.intro}
         ref={(section) => {
-          sectionRefs.current[0] = section
+          sectionRefs.current[1] = section
           heroRef.current = section
         }}
         className="welcome-hero page-intro"
@@ -1133,14 +1408,14 @@ function App() {
           </p>
         </div>
       </section>
-      {/* Page 01 end: intro */}
+      {/* Page 02 end: intro */}
 
-      {/* Page 02 begin: what we've delivered */}
+      {/* Page 03 begin: what we've delivered */}
       <section
         id={PAGE_IDS.delivered}
         data-page-id={PAGE_IDS.delivered}
         ref={(section) => {
-          sectionRefs.current[1] = section
+          sectionRefs.current[2] = section
           deliveredRef.current = section
         }}
         className="delivered-section delivered-cards-section page-delivered"
@@ -1159,14 +1434,14 @@ function App() {
           <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 02 end: what we've delivered */}
+      {/* Page 03 end: what we've delivered */}
 
-      {/* Page 03 begin: secret sauce */}
+      {/* Page 04 begin: secret sauce */}
       <section
         id={PAGE_IDS.secretSauce}
         data-page-id={PAGE_IDS.secretSauce}
         ref={(section) => {
-          sectionRefs.current[2] = section
+          sectionRefs.current[3] = section
           secretSauceRef.current = section
         }}
         className="delivered-section secret-sauce-section page-secret-sauce"
@@ -1188,14 +1463,14 @@ function App() {
           <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 03 end: secret sauce */}
+      {/* Page 04 end: secret sauce */}
 
-      {/* Page 04 begin: commitment */}
+      {/* Page 05 begin: commitment */}
       <section
         id={PAGE_IDS.commitment}
         data-page-id={PAGE_IDS.commitment}
         ref={(section) => {
-          sectionRefs.current[3] = section
+          sectionRefs.current[4] = section
         }}
         className="title-section page-commitment"
         aria-labelledby="commitment-title"
@@ -1261,14 +1536,14 @@ function App() {
           <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 04 end: commitment */}
+      {/* Page 05 end: commitment */}
 
-      {/* Page 05 begin: what we need */}
+      {/* Page 06 begin: what we need */}
       <section
         id={PAGE_IDS.needs}
         data-page-id={PAGE_IDS.needs}
         ref={(section) => {
-          sectionRefs.current[4] = section
+          sectionRefs.current[5] = section
         }}
         className="title-section page-needs"
         aria-labelledby="need-title"
@@ -1307,14 +1582,14 @@ function App() {
           <p className="slide-footer-mark">DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 05 end: what we need */}
+      {/* Page 06 end: what we need */}
 
-      {/* Page 06 begin: thank you */}
+      {/* Page 07 begin: thank you */}
       <section
         id={PAGE_IDS.thankYou}
         data-page-id={PAGE_IDS.thankYou}
         ref={(section) => {
-          sectionRefs.current[5] = section
+          sectionRefs.current[6] = section
         }}
         className="title-section page-thank-you"
         aria-labelledby="thank-you-title"
@@ -1325,14 +1600,14 @@ function App() {
           <p>DME-BI | Delivering Meaningful Experience</p>
         </div>
       </section>
-      {/* Page 06 end: thank you */}
+      {/* Page 07 end: thank you */}
 
-      {/* Page 07 begin: closing globe */}
+      {/* Page 08 begin: closing globe */}
       <section
         id={PAGE_IDS.opening}
         data-page-id={PAGE_IDS.opening}
         ref={(section) => {
-          sectionRefs.current[6] = section
+          sectionRefs.current[7] = section
         }}
         className="blank-section page-opening-globe"
         aria-label="Closing global network page"
@@ -1348,7 +1623,7 @@ function App() {
           </button>
         </div>
       </section>
-      {/* Page 07 end: closing globe */}
+      {/* Page 08 end: closing globe */}
     </main>
   )
 }
