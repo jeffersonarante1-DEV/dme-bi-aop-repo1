@@ -27,7 +27,7 @@ const deliveredCards = [
     backTitle: '01. People Development',
     backIcon: 'groups',
     backBody:
-      'DME-BI team members are now trained in Azure SQL data loading, data updates, and modern ETL processes - building internal capability alongside the platform.',
+      'People Development : Building internal capability through hands-on training in data engineering, ETL, and Power BI reporting.',
     backItems: [
       'Carlito, Celina, Dunstan, and Jammy can now upload data from SharePoint to Azure SQL in one click.',
       'George and Megail are designing Power BI dashboards.',
@@ -244,28 +244,28 @@ const tldrColumns = [
     title: "What's delivered",
     icon: 'task_alt',
     footer: 'Foundation delivered',
-    tableRows: ['1.A | People Development', '2.A | Azure SQL Environment', '3.A | Custom Web Applications', '4.A | Power BI Dashboards', '5.A | n/a'],
+    tableRows: [['1.A | People Development', 'Building internal capability through hands-on training in data engineering, ETL, and Power BI reporting.'], ['2.A | Azure SQL Environment', 'Centralizing key datasets into one trusted source to power reporting, automation, and analytics.'], ['3.A | Custom Web Applications', 'Built when the business needs entry forms, approval flows, or structured data capture connected directly to Azure SQL.'], ['4.A | Power BI Dashboards', 'Transforming centralized Azure SQL data into clean, decision-ready dashboards for leadership and operations.'], '5.A | n/a'],
   },
   {
     id: 'commitment',
-    title: 'Commitment plan until EOY',
+    title: 'Commitments Through EOY',
     icon: 'event_upcoming',
     footer: 'Execution focus',
-    tableRows: ['1.B | Continuous Training and Development', '2.B | Continuous Data Integration', '3.B | Continuous Custom Web Applications', '4.B | Continuous Power BI Dashboards', '5.B | Machine Learning (Forecasting, Clustering, Segmentations, etc.)'],
+    tableRows: ['1.B | Continuous Training and Development', '2.B | Continuous Data Integration', '3.B | Continuous Custom Web Applications', '4.B | Continuous Power BI Dashboards', ['5.B | Machine Learning', '(Forecasting, Clustering, Segmentations, etc.)']],
   },
   {
     id: 'needs',
     title: ["What's", 'needed'],
     icon: 'priority_high',
     footer: 'Support required',
-    tableRows: ['1.C | Data Engineer | Machine Learning', '2.C | Strategic Reserve of $500.00 monthly', '3.C | n/a', '4.C | n/a', '5.C | Data Engineer | Machine Learning'],
+    tableRows: ['1.C | Better Laptop Specs', '2.C | Strategic Reserve of $500.00 monthly', '3.C | n/a', '4.C | n/a', '5.C | Data Engineer | Machine Learning'],
   },
   {
     id: 'ecosystem',
     title: ['The', 'ecosystem'],
     icon: 'hub',
     footer: 'Target state',
-    tableRows: ['1.D | Secured Training Environment for Python and SQL', '2.D | Continuous Ecosystem Enhancement', '3.D | Entry Forms, etc', '4.D | Reports without the need for Human Delivery', '5.D | Visualizations + ML'],
+    tableRows: ['1.D | Secured Training Environment for Python and SQL', ['2.D | Azure Ecosystem', '( Automations, SQL Server, Web Page Hosting, etc. )'], ['3.D | Custom Web Development', '( Billable Hours, HR Rewards, DocuPlanner, etc. )'], ['4.D | Power BI', 'Reports without the need for Human Delivery'], '5.D | Visualizations + ML'],
   },
 ]
 
@@ -1687,8 +1687,18 @@ function App() {
               <table className="tldr-column-table" aria-label={`${column.title} summary table`}>
                 <tbody>
                   {Array.from({ length: 5 }, (_, rowIndex) => (
-                    <tr key={rowIndex}>
-                      <td>{column.tableRows[rowIndex] || rowIndex + 1}</td>
+                    <tr
+                      className={column.id === 'needs' && [2, 3].includes(rowIndex) ? 'is-muted-row' : undefined}
+                      key={rowIndex}
+                    >
+                      <td>
+                        {(Array.isArray(column.tableRows[rowIndex])
+                          ? column.tableRows[rowIndex]
+                          : [column.tableRows[rowIndex] || rowIndex + 1]
+                        ).map((line) => (
+                          <span key={line}>{line}</span>
+                        ))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
