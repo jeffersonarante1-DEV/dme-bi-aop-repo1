@@ -16,6 +16,7 @@ const PAGE_IDS = Object.freeze({
   commitment: 'page-commitment',
   needs: 'page-needs',
   thankYou: 'page-thank-you',
+  tldr: 'page-tldr',
 })
 
 // Page 03 card data: What we've delivered.
@@ -234,6 +235,37 @@ const secretSauceCards = [
     },
     points: [[14, 50], [28, 42], [42, 46], [55, 36], [70, 43], [84, 36], [90, 54], [66, 66]],
     path: 'M14 50 L28 42 L42 46 L55 36 L70 43 L84 36 L90 54 M70 43 L66 66 L42 46',
+  },
+]
+
+const tldrColumns = [
+  {
+    id: 'delivered',
+    title: "What's delivered",
+    icon: 'task_alt',
+    footer: 'Foundation delivered',
+    tableRows: ['1.A | People Development', '2.A | Azure SQL Environment', '3.A | Custom Web Applications', '4.A | Power BI Dashboards', '5.A | n/a'],
+  },
+  {
+    id: 'commitment',
+    title: 'Commitment plan until EOY',
+    icon: 'event_upcoming',
+    footer: 'Execution focus',
+    tableRows: ['1.B | Continuous Training and Development', '2.B | Continuous Data Integration', '3.B | Continuous Custom Web Applications', '4.B | Continuous Power BI Dashboards', '5.B | Machine Learning (Forecasting, Clustering, Segmentations, etc.)'],
+  },
+  {
+    id: 'needs',
+    title: ["What's", 'needed'],
+    icon: 'priority_high',
+    footer: 'Support required',
+    tableRows: ['1.C | Data Engineer | Machine Learning', '2.C | Strategic Reserve of $500.00 monthly', '3.C | n/a', '4.C | n/a', '5.C | Data Engineer | Machine Learning'],
+  },
+  {
+    id: 'ecosystem',
+    title: ['The', 'ecosystem'],
+    icon: 'hub',
+    footer: 'Target state',
+    tableRows: ['1.D | Secured Training Environment for Python and SQL', '2.D | Continuous Ecosystem Enhancement', '3.D | Entry Forms, etc', '4.D | Reports without the need for Human Delivery', '5.D | Visualizations + ML'],
   },
 ]
 
@@ -1624,6 +1656,49 @@ function App() {
         </div>
       </section>
       {/* Page 08 end: closing globe */}
+
+      {/* Page 09 begin: TLDR */}
+      <section
+        id={PAGE_IDS.tldr}
+        data-page-id={PAGE_IDS.tldr}
+        ref={(section) => {
+          sectionRefs.current[8] = section
+        }}
+        className="tldr-section page-tldr"
+        aria-labelledby="tldr-title"
+      >
+        <h2 id="tldr-title">TLDR;</h2>
+        <div className="tldr-column-grid" aria-label="TLDR summary columns">
+          {tldrColumns.map((column, index) => (
+            <article className={`tldr-column tldr-column--${column.id}`} key={column.id}>
+              <div className="tldr-column-header">
+                <div className="tldr-column-header-top">
+                  <span className="tldr-column-number">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="material-symbols-outlined tldr-column-icon" aria-hidden="true">
+                    {column.icon}
+                  </span>
+                </div>
+                <h3>
+                  {(Array.isArray(column.title) ? column.title : [column.title]).map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+                </h3>
+              </div>
+              <table className="tldr-column-table" aria-label={`${column.title} summary table`}>
+                <tbody>
+                  {Array.from({ length: 5 }, (_, rowIndex) => (
+                    <tr key={rowIndex}>
+                      <td>{column.tableRows[rowIndex] || rowIndex + 1}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <footer className="tldr-column-footer">{column.footer}</footer>
+            </article>
+          ))}
+        </div>
+      </section>
+      {/* Page 09 end: TLDR */}
     </main>
   )
 }

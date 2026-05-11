@@ -1,5 +1,5 @@
 .hero-shell {
-  min-height: 800svh;
+  min-height: 900svh;
   overflow-x: hidden;
   background:
     radial-gradient(circle at 50% 33%, rgba(0, 229, 255, 0.1), transparent 23rem),
@@ -8,6 +8,190 @@
     linear-gradient(180deg, #050505 0%, #000 100%);
   color: #f7f4ec;
 }
+
+/* Page 09 begin: TLDR */
+.tldr-section {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100svh;
+  place-items: start;
+  gap: clamp(2rem, 5vh, 4rem);
+  overflow: hidden;
+  padding: clamp(3rem, 7vw, 6rem);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  background:
+    linear-gradient(rgba(20, 17, 12, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 17, 12, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 18% 20%, rgba(255, 217, 83, 0.22), transparent 18rem),
+    radial-gradient(circle at 84% 72%, rgba(137, 204, 224, 0.18), transparent 22rem),
+    #f4efe4;
+  background-size: 38px 38px, 38px 38px, auto, auto, auto;
+  color: #191713;
+}
+
+.tldr-section::before,
+.tldr-section::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.tldr-section::before {
+  inset: 0;
+  background:
+    linear-gradient(105deg, transparent 0 42%, rgba(255, 255, 255, 0.4) 48%, transparent 55%),
+    radial-gradient(circle at 50% 120%, rgba(20, 17, 12, 0.08), transparent 42%);
+  opacity: 0.65;
+}
+
+.tldr-section::after {
+  inset: clamp(1.2rem, 2vw, 2.2rem);
+  border: 1px solid rgba(25, 23, 19, 0.12);
+}
+
+.tldr-section h2 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.8rem, 6vw, 5.6rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: 0;
+  color: #17140e;
+  text-shadow: 0 0.15rem 0 rgba(255, 255, 255, 0.72);
+}
+
+.tldr-column-grid {
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(1rem, 1.8vw, 1.5rem);
+  width: 100%;
+}
+
+.tldr-column {
+  position: relative;
+  display: grid;
+  grid-template-rows: clamp(9.5rem, 17vh, 13rem) 1fr auto;
+  gap: clamp(1rem, 1.8vh, 1.45rem);
+  min-width: 0;
+  padding: clamp(1.15rem, 1.7vw, 1.8rem);
+  border: 1px solid rgba(25, 23, 19, 0.14);
+  border-top: 0.55rem solid var(--tldr-accent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tldr-accent) 16%, #fff 84%) 0,
+      color-mix(in srgb, var(--tldr-accent) 10%, #fff 90%) clamp(9.5rem, 17vh, 13rem),
+      rgba(255, 252, 243, 0.72) clamp(9.5rem, 17vh, 13rem)
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.16)),
+    rgba(255, 252, 243, 0.72);
+  box-shadow:
+    0 1.4rem 3.2rem rgba(46, 38, 23, 0.16),
+    0 0.35rem 0.9rem rgba(46, 38, 23, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.tldr-column--delivered { --tldr-accent: #61bdd1; }
+.tldr-column--commitment { --tldr-accent: #9b7adf; }
+.tldr-column--needs { --tldr-accent: #e783a1; }
+.tldr-column--ecosystem { --tldr-accent: #7ebf83; }
+
+.tldr-column-header {
+  display: grid;
+  align-content: start;
+  gap: clamp(0.75rem, 1.3vh, 1.05rem);
+}
+
+.tldr-column-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tldr-column-number {
+  color: rgba(25, 23, 19, 0.28);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.25rem, 3.2vw, 4rem);
+  font-style: italic;
+  line-height: 0.8;
+}
+
+.tldr-column-icon {
+  display: grid;
+  place-items: center;
+  width: clamp(2rem, 2.2vw, 2.8rem);
+  height: clamp(2rem, 2.2vw, 2.8rem);
+  border: 1px solid color-mix(in srgb, var(--tldr-accent) 58%, rgba(25, 23, 19, 0.12));
+  background: color-mix(in srgb, var(--tldr-accent) 12%, rgba(255, 255, 255, 0.62));
+  color: color-mix(in srgb, var(--tldr-accent) 72%, #191713);
+  font-size: clamp(1.1rem, 1.2vw, 1.45rem);
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.tldr-column h3 {
+  margin: 0;
+  max-width: 11ch;
+  color: #191713;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.35rem, 1.95vw, 2.35rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.tldr-column h3 span {
+  display: block;
+}
+
+.tldr-column-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tldr-column-table tbody,
+.tldr-column-table tr {
+  height: calc(100% / 5);
+}
+
+.tldr-column-table td {
+  border-top: 1px solid rgba(25, 23, 19, 0.15);
+  padding: 0.55rem 0 0 1rem;
+  color: rgba(25, 23, 19, 0.72);
+  font-family: 'Google Sans', 'Product Sans', 'Segoe UI', sans-serif;
+  font-size: clamp(0.86rem, 0.82vw, 1.04rem);
+  font-weight: 600;
+  line-height: 1.35;
+  vertical-align: top;
+}
+
+.tldr-column-table tr:last-child td {
+  border-bottom: 1px solid rgba(25, 23, 19, 0.15);
+}
+
+.tldr-column-footer {
+  align-self: end;
+  width: 100%;
+  padding-top: clamp(0.75rem, 1.3vh, 1rem);
+  border-top: 1px solid rgba(25, 23, 19, 0.16);
+  color: rgba(25, 23, 19, 0.38);
+  font-family: 'Courier New', monospace;
+  font-size: clamp(0.56rem, 0.58vw, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+/* Page 09 end: TLDR */
 
 @property --edge-angle {
   syntax: '<angle>';
