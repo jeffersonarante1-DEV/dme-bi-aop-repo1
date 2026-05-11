@@ -1673,7 +1673,7 @@ function App() {
             <article className={`tldr-column tldr-column--${column.id}`} key={column.id}>
               <div className="tldr-column-header">
                 <div className="tldr-column-header-top">
-                  <span className="tldr-column-number">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="tldr-column-number">{String.fromCharCode(65 + index) + '.'}</span>
                   <span className="material-symbols-outlined tldr-column-icon" aria-hidden="true">
                     {column.icon}
                   </span>
