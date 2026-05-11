@@ -1688,7 +1688,7 @@ function App() {
                 <tbody>
                   {Array.from({ length: 5 }, (_, rowIndex) => (
                     <tr
-                      className={column.id === 'needs' && [2, 3].includes(rowIndex) ? 'is-muted-row' : undefined}
+                      className={(column.id === 'needs' && [2, 3].includes(rowIndex)) || (column.id === 'delivered' && rowIndex === 4) ? 'is-muted-row' : undefined}
                       key={rowIndex}
                     >
                       <td>
