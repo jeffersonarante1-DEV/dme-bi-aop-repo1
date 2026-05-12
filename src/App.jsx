@@ -742,8 +742,6 @@ const FlipCard = memo(function FlipCard({ card }) {
       <div className="flip-card-inner">
         <div className="flip-face flip-front">
           <ConstellationArt card={card} />
-          <span className="constellation-name">{card.label}</span>
-          <span className="face-label">front</span>
         </div>
         <div className="flip-face flip-back">
           <div className="back-card-copy">
@@ -1298,6 +1296,7 @@ function App() {
     let centerY = 0
     let animationFrame = 0
     let stars = []
+    let crawlers = []
     const startedAt = performance.now()
 
     const nodeCount = 92
@@ -1332,8 +1331,8 @@ function App() {
       width = rect.width
       height = rect.height
       centerX = width / 2
-      centerY = height * (width < 720 ? 0.42 : 0.43)
-      radius = Math.min(width, height) * (width < 720 ? 0.3 : 0.315)
+      centerY = height * (width < 720 ? 0.9 : 0.98)
+      radius = Math.min(width, height) * (width < 720 ? 0.42 : 0.48)
       canvas.width = width * pixelRatio
       canvas.height = height * pixelRatio
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
@@ -1343,6 +1342,13 @@ function App() {
         size: 0.45 + ((index * 19) % 9) / 8,
         hue: index % 5 === 0 ? '255, 91, 205' : index % 3 === 0 ? '0, 229, 255' : '236, 244, 255',
         alpha: 0.18 + ((index * 23) % 70) / 100,
+      }))
+      crawlers = Array.from({ length: 42 }, (_, index) => ({
+        linkIndex: (index * 7) % links.length,
+        offset: ((index * 37) % 100) / 100,
+        speed: 0.16 + ((index * 17) % 100) / 260,
+        color: index % 4 === 0 ? '0, 245, 255' : index % 4 === 1 ? '255, 43, 214' : index % 4 === 2 ? '104, 92, 255' : '245, 252, 255',
+        size: 2.4 + ((index * 11) % 8) / 4,
       }))
     }
 
@@ -1369,27 +1375,62 @@ function App() {
 
     function drawOrbit(angle, alpha, scaleY, color, sweepOffset) {
       const sweep = Math.PI * 1.72
+      const orbitRadius = radius * 1.85
+      const globeMaskRadius = radius * 1.08
+      const cosAngle = Math.cos(angle)
+      const sinAngle = Math.sin(angle)
+      const segmentSteps = 132
+
+      function orbitPoint(theta) {
+        const localX = Math.cos(theta) * orbitRadius
+        const localY = Math.sin(theta) * orbitRadius * scaleY
+
+        return {
+          x: centerX + localX * cosAngle - localY * sinAngle,
+          y: centerY + localX * sinAngle + localY * cosAngle,
+        }
+      }
+
+      function isOutsideGlobe(point) {
+        return Math.hypot(point.x - centerX, point.y - centerY) > globeMaskRadius
+      }
+
+      function traceOrbitPath(start, end, steps) {
+        let drawingSegment = false
+
+        context.beginPath()
+        for (let i = 0; i <= steps; i++) {
+          const point = orbitPoint(start + ((end - start) * i) / steps)
+
+          if (!isOutsideGlobe(point)) {
+            drawingSegment = false
+            continue
+          }
+
+          if (!drawingSegment) {
+            context.moveTo(point.x, point.y)
+            drawingSegment = true
+          } else {
+            context.lineTo(point.x, point.y)
+          }
+        }
+      }
 
       context.save()
-      context.translate(centerX, centerY)
-      context.rotate(angle)
-      context.scale(1, scaleY)
 
-      context.shadowBlur = 20
+      context.shadowBlur = 7
       context.shadowColor = color
-      context.beginPath()
-      context.ellipse(0, 0, radius * 1.85, radius * 1.85, 0, state.orbit + sweepOffset, state.orbit + sweepOffset + sweep)
+      traceOrbitPath(state.orbit + sweepOffset, state.orbit + sweepOffset + sweep, segmentSteps)
       context.strokeStyle = color.replace('1)', `${alpha})`)
-      context.lineWidth = 1.3
+      context.lineWidth = 1
       context.lineCap = 'round'
       context.stroke()
 
       context.shadowBlur = 0
-      context.beginPath()
-      context.ellipse(0, 0, radius * 1.85, radius * 1.85, 0, 0, Math.PI * 2)
-      context.strokeStyle = color.replace('1)', '0.16)')
+      traceOrbitPath(0, Math.PI * 2, segmentSteps)
+      context.strokeStyle = color.replace('1)', '0.1)')
       context.setLineDash([2, 7])
-      context.lineWidth = 0.7
+      context.lineWidth = 0.5
       context.stroke()
       context.setLineDash([])
       context.restore()
@@ -1411,20 +1452,19 @@ function App() {
       })
 
       const projected = nodes.map(project)
-      const glow = context.createRadialGradient(centerX, centerY, radius * 0.05, centerX, centerY, radius * 1.45)
-      glow.addColorStop(0, 'rgba(255, 255, 255, 0.05)')
-      glow.addColorStop(0.34, 'rgba(0, 229, 255, 0.18)')
-      glow.addColorStop(0.68, 'rgba(182, 91, 255, 0.12)')
+      const glow = context.createRadialGradient(centerX, centerY, radius * 0.08, centerX, centerY, radius * 1.32)
+      glow.addColorStop(0, 'rgba(255, 255, 255, 0.07)')
+      glow.addColorStop(0.3, 'rgba(0, 245, 255, 0.28)')
+      glow.addColorStop(0.58, 'rgba(255, 43, 214, 0.17)')
+      glow.addColorStop(0.78, 'rgba(104, 92, 255, 0.12)')
       glow.addColorStop(1, 'rgba(0, 0, 0, 0)')
       context.fillStyle = glow
       context.beginPath()
-      context.arc(centerX, centerY, radius * 1.46, 0, Math.PI * 2)
+      context.arc(centerX, centerY, radius * 1.36, 0, Math.PI * 2)
       context.fill()
 
-      drawOrbit(state.orbit * 0.32, 0.38, 0.18, 'rgba(0, 229, 255, 1)', 0)
-      drawOrbit(-0.48 - state.orbit * 0.26, 0.24, 0.3, 'rgba(236, 244, 255, 1)', Math.PI * 0.3)
-      drawOrbit(0.52 + state.orbit * 0.22, 0.3, 0.46, 'rgba(255, 91, 205, 1)', Math.PI * 0.72)
-      drawOrbit(Math.PI / 2 + state.orbit * 0.16, 0.2, 0.62, 'rgba(0, 229, 255, 1)', Math.PI * 1.1)
+      drawOrbit(state.orbit * 0.32, 0.28, 0.18, 'rgba(0, 245, 255, 1)', 0)
+      drawOrbit(0.52 + state.orbit * 0.22, 0.24, 0.46, 'rgba(255, 43, 214, 1)', Math.PI * 0.72)
 
       links.forEach((link) => {
         const a = projected[link.a]
@@ -1436,21 +1476,48 @@ function App() {
         context.beginPath()
         context.moveTo(a.x, a.y)
         context.lineTo(b.x, b.y)
-        context.strokeStyle = indexColor(link.a, 0.06 + visibility * 0.28)
-        context.lineWidth = 0.7
+        context.strokeStyle = indexColor(link.a, 0.12 + visibility * 0.42)
+        context.lineWidth = 0.95
         context.stroke()
       })
 
       projected.forEach((point, index) => {
         const flicker = Math.sin(state.pulse + index * 0.72) * 0.45 + 0.55
-        const alpha = 0.24 + point.depth * 0.72
-        const color = index % 3 === 0 ? '0, 229, 255' : index % 3 === 1 ? '255, 43, 214' : '245, 252, 255'
+        const alpha = 0.36 + point.depth * 0.6
+        const color = index % 4 === 0 ? '0, 245, 255' : index % 4 === 1 ? '255, 43, 214' : index % 4 === 2 ? '104, 92, 255' : '245, 252, 255'
 
         context.beginPath()
-        context.arc(point.x, point.y, point.size * 0.72 + flicker * 0.55, 0, Math.PI * 2)
-        context.shadowBlur = 13 + flicker * 8
+        context.arc(point.x, point.y, point.size * 0.82 + flicker * 0.42, 0, Math.PI * 2)
+        context.shadowBlur = 8 + flicker * 5
         context.shadowColor = `rgba(${color}, 0.95)`
         context.fillStyle = `rgba(${color}, ${alpha})`
+        context.fill()
+        context.shadowBlur = 0
+      })
+
+      crawlers.forEach((crawler) => {
+        const link = links[crawler.linkIndex]
+        const a = projected[link.a]
+        const b = projected[link.b]
+        const visibility = Math.min(a.depth, b.depth)
+
+        if (visibility < 0.12) return
+
+        const progress = (crawler.offset + elapsed * crawler.speed) % 1
+        const x = a.x + (b.x - a.x) * progress
+        const y = a.y + (b.y - a.y) * progress
+        const alpha = 0.72 + visibility * 0.26
+
+        context.beginPath()
+        context.arc(x, y, crawler.size * 1.45, 0, Math.PI * 2)
+        context.shadowBlur = 10
+        context.shadowColor = `rgba(${crawler.color}, 0.9)`
+        context.fillStyle = `rgba(${crawler.color}, ${alpha})`
+        context.fill()
+
+        context.beginPath()
+        context.arc(x, y, crawler.size * 0.56, 0, Math.PI * 2)
+        context.fillStyle = `rgba(255, 255, 255, ${0.72 + visibility * 0.24})`
         context.fill()
         context.shadowBlur = 0
       })
@@ -1459,7 +1526,10 @@ function App() {
     }
 
     function indexColor(index, alpha) {
-      return index % 2 === 0 ? `rgba(0, 229, 255, ${alpha})` : `rgba(255, 43, 214, ${alpha})`
+      if (index % 3 === 0) return `rgba(0, 245, 255, ${alpha})`
+      if (index % 3 === 1) return `rgba(255, 43, 214, ${alpha})`
+
+      return `rgba(104, 92, 255, ${alpha})`
     }
 
     resize()
@@ -1620,8 +1690,8 @@ function App() {
         <div className="hero-content">
           <p className="hero-kicker">DME-BI | Delivering Meaningful Experience</p>
           <h1 ref={titleRef} id="welcome-title">
-            <span>Dream Tonight.</span>
-            <span className="title-gradient">Engineering Tomorrow.</span>
+            <span>Your dream tonight.</span>
+            <span className="title-gradient">Our delivery tomorrow.</span>
           </h1>
           <div className="hero-rule" aria-hidden="true"></div>
           <p ref={copyRef} className="hero-copy">
@@ -1672,7 +1742,7 @@ function App() {
         <RandomStars />
         <div className="delivered-inner">
           <h2 id="secret-sauce-title" className="delivered-title secret-sauce-title">
-            <span>The Secret Sauce</span>
+            <span>The <span className="secret-sauce-gradient">Secret Sauce</span></span>
             <span>we are building steadily</span>
           </h2>
 
@@ -1700,7 +1770,10 @@ function App() {
         <RandomStars />
         <div className="commitment-inner">
           <div className="commitment-left">
-            <h2 id="commitment-title">The commitment</h2>
+            <h2 id="commitment-title">
+              <span>Our </span>
+              <span className="commitment-title-gradient">Commitment</span>
+            </h2>
             <div className="commitment-cards" role="list">
             <article className="commitment-card commitment-card--cyan" role="listitem">
               <div className="commitment-card-header">

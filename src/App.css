@@ -649,6 +649,17 @@
     0 0 1.5rem rgba(0, 229, 255, 0.12);
 }
 
+.commitment-inner h2 span {
+  display: inline;
+}
+
+.commitment-title-gradient {
+  background: linear-gradient(96deg, #ff4fd8 0%, #ff6a3d 42%, #00f5ff 100%);
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 /* 2 × 2 premium card grid */
 .commitment-cards {
   display: grid;
@@ -1097,8 +1108,8 @@
   height: 100%;
   opacity: 0;
   filter:
-    drop-shadow(0 0 2rem rgba(0, 229, 255, 0.28))
-    drop-shadow(0 0 3rem rgba(255, 43, 214, 0.2));
+    drop-shadow(0 0 1.15rem rgba(0, 245, 255, 0.34))
+    drop-shadow(0 0 1.7rem rgba(255, 43, 214, 0.22));
   mix-blend-mode: screen;
   pointer-events: none;
 }
@@ -1142,16 +1153,13 @@
   display: grid;
   gap: clamp(0.18rem, 0.9vw, 0.62rem);
   margin: 0;
-  color: #fffaf0;
+  color: #ffffff;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(4rem, 9.3vw, 7.9rem);
   font-weight: 400;
   line-height: 0.76;
   transform-origin: 50% 100%;
-  text-shadow:
-    0 0 0.55rem rgba(0, 229, 255, 0.16),
-    0 0 1.35rem rgba(255, 91, 205, 0.12),
-    0 0 2.5rem rgba(0, 229, 255, 0.08);
+  text-shadow: none;
 }
 
 .welcome-hero.is-off-white .hero-content h1 {
@@ -1167,13 +1175,11 @@
   margin-top: clamp(0.22rem, 1.1vw, 0.72rem);
   padding-bottom: 0.08em;
   font-style: italic;
-  background: linear-gradient(96deg, #ff5f62 0%, #ffc07c 35%, #f2a7c8 66%, #a78bff 100%);
+  background: linear-gradient(96deg, #ff4fd8 0%, #ff6a3d 42%, #00f5ff 100%);
   color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
-  text-shadow:
-    0 0 0.7rem rgba(255, 91, 205, 0.18),
-    0 0 1.6rem rgba(0, 229, 255, 0.08);
+  text-shadow: none;
 }
 
 .welcome-hero.is-off-white .title-gradient {
@@ -1527,13 +1533,22 @@
   white-space: nowrap;
 }
 
+.secret-sauce-title .secret-sauce-gradient {
+  display: inline;
+  background: linear-gradient(96deg, #ff4fd8 0%, #ff6a3d 42%, #00f5ff 100%);
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 .secret-sauce-section .back-card-copy h3 {
   max-width: 10ch;
+  min-height: 3.4em;
   font-size: clamp(1.25rem, 1.35vw, 1.8rem);
 }
 
 .secret-sauce-section .back-card-copy p {
-  margin-top: clamp(1.35rem, 2.4vh, 1.9rem);
+  margin-top: 0;
   font-size: clamp(0.68rem, 0.62vw, 0.82rem);
 }
 
