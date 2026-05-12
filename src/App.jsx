@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import * as am5 from '@amcharts/amcharts5'
 import * as am5map from '@amcharts/amcharts5/map'
@@ -244,7 +244,7 @@ const tldrColumns = [
     title: "What's delivered",
     icon: 'task_alt',
     footer: 'Foundation delivered',
-    tableRows: [['1.A | People Development', 'Building internal capability through hands-on training in data engineering, ETL, and Power BI reporting.'], ['2.A | Azure SQL Environment', 'Centralizing key datasets into one trusted source to power reporting, automation, and analytics.'], ['3.A | Custom Web Applications', 'Built when the business needs entry forms, approval flows, or structured data capture connected directly to Azure SQL.'], ['4.A | Power BI Dashboards', 'Transforming centralized Azure SQL data into clean, decision-ready dashboards for leadership and operations.'], '5.A | n/a'],
+    tableRows: [['1.A | People Development', 'Building internal capability through hands-on training in data engineering, ETL, and Power BI reporting.'], ['2.A | Azure SQL Environment', 'Centralizing key datasets into one trusted source to power reporting, automation, and analytics.'], ['3.A | Custom Web Applications', 'Built when the business needs entry forms, approval flows, or structured data capture connected directly to Azure SQL.'], ['4.A | Power BI Dashboards', 'Transforming centralized Azure SQL data into clean, decision-ready dashboards for leadership and operations.'], '5.A | -'],
   },
   {
     id: 'commitment',
@@ -258,7 +258,7 @@ const tldrColumns = [
     title: ["What's", 'needed'],
     icon: 'priority_high',
     footer: 'Support required',
-    tableRows: ['1.C | Better Laptop Specs', '2.C | Strategic Reserve of $500.00 monthly', '3.C | n/a', '4.C | n/a', '5.C | Data Engineer | Machine Learning'],
+    tableRows: ['1.C | Better Laptop Specs', '2.C | Strategic Reserve of $500.00 monthly', '3.C | -', '4.C | -', '5.C | Data Engineer | Machine Learning'],
   },
   {
     id: 'ecosystem',
@@ -827,8 +827,8 @@ const neonPills = NEON_LABELS.map((label, i) => {
   return {
     id: i,
     label,
-    x,
-    y,
+    homeX: x,
+    homeY: y,
     color: NEON_COLORS[i % NEON_COLORS.length],
     dur: `${9 + (i % 9) * 1.4}s`,
     delay: `${(i % 13) * -1.15}s`,
@@ -838,6 +838,190 @@ const neonPills = NEON_LABELS.map((label, i) => {
     dy: `${Math.cos(i * 0.91) * 8 + 3}px`,
   }
 })
+
+const PILL_EDGE_PADDING = 24
+const PILL_COLLISION_GAP = 18
+const PILL_MOTION_PADDING = 18
+
+function clampNumber(value, min, max) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function rectsOverlap(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+function toCollisionRect(left, top, width, height) {
+  return {
+    left: left - PILL_COLLISION_GAP - PILL_MOTION_PADDING,
+    top: top - PILL_COLLISION_GAP - PILL_MOTION_PADDING,
+    right: left + width + PILL_COLLISION_GAP + PILL_MOTION_PADDING,
+    bottom: top + height + PILL_COLLISION_GAP + PILL_MOTION_PADDING,
+  }
+}
+
+function getPillAvoidRects(width, height) {
+  return [
+    {
+      left: width * 0.25,
+      top: height * 0.2,
+      right: width * 0.75,
+      bottom: height * 0.52,
+    },
+    {
+      left: width * 0.28,
+      top: height * 0.9,
+      right: width * 0.72,
+      bottom: height,
+    },
+  ]
+}
+
+function createPillCandidatePoints(width, height, pillWidth, pillHeight) {
+  const xLimit = Math.max(PILL_EDGE_PADDING, width - pillWidth - PILL_EDGE_PADDING)
+  const yLimit = Math.max(PILL_EDGE_PADDING, height - pillHeight - PILL_EDGE_PADDING)
+  const points = []
+  const zones = [
+    { xs: [2, 7, 12], ys: [7, 22, 37, 52, 67, 82] },
+    { xs: [82, 87, 92], ys: [9, 24, 39, 54, 69, 84] },
+    { xs: [20, 33, 46, 59, 72], ys: [4, 11] },
+    { xs: [3, 15, 27, 39], ys: [60, 72, 84] },
+    { xs: [52, 64, 76, 86], ys: [60, 72, 84] },
+  ]
+
+  zones.forEach((zone) => {
+    zone.ys.forEach((yPercent) => {
+      zone.xs.forEach((xPercent) => {
+        points.push({
+          left: clampNumber((width * xPercent) / 100, PILL_EDGE_PADDING, xLimit),
+          top: clampNumber((height * yPercent) / 100, PILL_EDGE_PADDING, yLimit),
+        })
+      })
+    })
+  })
+
+  const stepX = Math.max(pillWidth + (PILL_COLLISION_GAP + PILL_MOTION_PADDING) * 2, 112)
+  const stepY = Math.max(pillHeight + (PILL_COLLISION_GAP + PILL_MOTION_PADDING) * 2, 58)
+  for (let top = PILL_EDGE_PADDING; top <= yLimit; top += stepY) {
+    for (let left = PILL_EDGE_PADDING; left <= xLimit; left += stepX) {
+      points.push({
+        left,
+        top,
+      })
+    }
+  }
+
+  return points.map((point) => ({
+    left: clampNumber(point.left, PILL_EDGE_PADDING, xLimit),
+    top: clampNumber(point.top, PILL_EDGE_PADDING, yLimit),
+  }))
+}
+
+function calculatePillLayout(pills, pillSizes, width, height) {
+  const avoidRects = getPillAvoidRects(width, height)
+  const placedRects = []
+  const candidateCache = new Map()
+
+  return pills.map((pill) => {
+    const size = pillSizes[pill.id] || { width: 140, height: 28 }
+    const xLimit = Math.max(PILL_EDGE_PADDING, width - size.width - PILL_EDGE_PADDING)
+    const yLimit = Math.max(PILL_EDGE_PADDING, height - size.height - PILL_EDGE_PADDING)
+    const home = {
+      left: clampNumber((width * pill.homeX) / 100, PILL_EDGE_PADDING, xLimit),
+      top: clampNumber((height * pill.homeY) / 100, PILL_EDGE_PADDING, yLimit),
+    }
+    const cacheKey = `${Math.round(size.width)}:${Math.round(size.height)}`
+    const pool = candidateCache.get(cacheKey) || createPillCandidatePoints(width, height, size.width, size.height)
+    candidateCache.set(cacheKey, pool)
+
+    const candidates = [home, ...pool]
+      .map((candidate) => ({
+        ...candidate,
+        score: Math.hypot(candidate.left - home.left, candidate.top - home.top),
+      }))
+      .sort((a, b) => a.score - b.score)
+
+    const selected =
+      candidates.find((candidate) => {
+        const rect = toCollisionRect(candidate.left, candidate.top, size.width, size.height)
+        return !avoidRects.some((avoidRect) => rectsOverlap(rect, avoidRect)) &&
+          !placedRects.some((placedRect) => rectsOverlap(rect, placedRect))
+      }) || home
+
+    placedRects.push(toCollisionRect(selected.left, selected.top, size.width, size.height))
+
+    return {
+      left: selected.left,
+      top: selected.top,
+    }
+  })
+}
+
+function NeonPillLayer({ pills }) {
+  const layerRef = useRef(null)
+  const pillRefs = useRef([])
+  const [positions, setPositions] = useState([])
+
+  useLayoutEffect(() => {
+    const layer = layerRef.current
+    if (!layer) return undefined
+
+    function updateLayout() {
+      const { width, height } = layer.getBoundingClientRect()
+      if (!width || !height) return
+
+      const pillSizes = pillRefs.current.map((pillElement) => {
+        if (!pillElement) return { width: 140, height: 28 }
+
+        const rect = pillElement.getBoundingClientRect()
+        return { width: rect.width, height: rect.height }
+      })
+
+      setPositions(calculatePillLayout(pills, pillSizes, width, height))
+    }
+
+    updateLayout()
+
+    const resizeObserver = new ResizeObserver(updateLayout)
+    resizeObserver.observe(layer)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [pills])
+
+  return (
+    <div className="neon-pill-layer" ref={layerRef} aria-hidden="true">
+      {pills.map((pill, index) => {
+        const position = positions[index]
+
+        return (
+          <span
+            key={pill.id}
+            ref={(pillElement) => { pillRefs.current[index] = pillElement }}
+            className="neon-pill"
+            style={{
+              left: position ? `${position.left}px` : `${pill.homeX}%`,
+              top: position ? `${position.top}px` : `${pill.homeY}%`,
+              color: pill.color.hex,
+              borderColor: pill.color.hex,
+              '--pill-dur': pill.dur,
+              '--pill-delay': pill.delay,
+              '--pill-flicker-dur': pill.flickerDur,
+              '--pill-flicker-delay': pill.flickerDelay,
+              '--pill-dx': pill.dx,
+              '--pill-dy': pill.dy,
+              boxShadow: `0 0 5px ${pill.color.hex}, 0 0 16px rgba(${pill.color.rgb},0.58), 0 0 32px rgba(${pill.color.rgb},0.28), inset 0 0 10px rgba(${pill.color.rgb},0.06)`,
+              visibility: positions.length === pills.length ? 'visible' : 'hidden',
+            }}
+          >
+            {pill.label}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
 
 const starfieldDots = Array.from({ length: 320 }, (_, i) => ({
   id: `sf-${i}`,
@@ -1096,6 +1280,7 @@ function App() {
   const deliveredRef = useRef(null)
   const secretSauceRef = useRef(null)
   const heroRef = useRef(null)
+  const [isIntroOffWhite, setIsIntroOffWhite] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -1287,25 +1472,44 @@ function App() {
       .fromTo(titleRef.current, { opacity: 0, y: 92, rotateX: 22 }, { opacity: 1, y: 0, rotateX: 0, duration: 1.15 }, '-=0.55')
       .fromTo(copyRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.85 }, '-=0.58')
 
-    const deliveredElements = deliveredRef.current.querySelectorAll('.delivered-title, .flip-card')
+    const deliveredTitle = deliveredRef.current.querySelector('.delivered-title')
+    const deliveredCards = deliveredRef.current.querySelectorAll('.flip-card')
     const secretSauceElements = secretSauceRef.current.querySelectorAll('.delivered-title, .flip-card')
     const deliveredObserver = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return
 
-        gsap.to(deliveredElements, {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          stagger: 0.1,
-          ease: 'power3.out',
-        })
+        gsap.timeline()
+          .to(deliveredTitle, {
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            ease: 'power3.out',
+          })
+          .to(deliveredCards, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            rotateX: 0,
+            filter: 'blur(0px)',
+            duration: 0.95,
+            stagger: 0.18,
+            ease: 'power3.out',
+          }, '-=0.18')
         deliveredObserver.disconnect()
       },
       { threshold: 0.28 },
     )
 
-    gsap.set(deliveredElements, { opacity: 0, y: 42 })
+    gsap.set(deliveredTitle, { opacity: 0, y: 34 })
+    gsap.set(deliveredCards, {
+      opacity: 0,
+      y: 54,
+      scale: 0.94,
+      rotateX: 8,
+      filter: 'blur(8px)',
+      transformOrigin: '50% 70%',
+    })
     deliveredObserver.observe(deliveredRef.current)
 
     const secretSauceObserver = new IntersectionObserver(
@@ -1382,32 +1586,11 @@ function App() {
           <p className="starfield-hero-title">
             <span>DME</span>
             <span>DataVerse</span>
-            <span>Ecosystem</span>
           </p>
           <p className="starfield-hero-sub">Secured | Scalable | Reliable</p>
         </div>
         <p className="starfield-footer">DME-BI | Delivering Meaningful Experience</p>
-        {neonPills.map((pill) => (
-          <span
-            key={pill.id}
-            className="neon-pill"
-            style={{
-              left: `${pill.x}%`,
-              top: `${pill.y}%`,
-              color: pill.color.hex,
-              borderColor: pill.color.hex,
-              '--pill-dur': pill.dur,
-              '--pill-delay': pill.delay,
-              '--pill-flicker-dur': pill.flickerDur,
-              '--pill-flicker-delay': pill.flickerDelay,
-              '--pill-dx': pill.dx,
-              '--pill-dy': pill.dy,
-              boxShadow: `0 0 5px ${pill.color.hex}, 0 0 16px rgba(${pill.color.rgb},0.58), 0 0 32px rgba(${pill.color.rgb},0.28), inset 0 0 10px rgba(${pill.color.rgb},0.06)`,
-            }}
-          >
-            {pill.label}
-          </span>
-        ))}
+        <NeonPillLayer pills={neonPills} />
       </section>
       {/* Page 01 end: starfield */}
 
@@ -1419,9 +1602,17 @@ function App() {
           sectionRefs.current[1] = section
           heroRef.current = section
         }}
-        className="welcome-hero page-intro"
+        className={`welcome-hero page-intro${isIntroOffWhite ? ' is-off-white' : ''}`}
         aria-labelledby="welcome-title"
       >
+        <button
+          className="intro-theme-toggle"
+          type="button"
+          aria-pressed={isIntroOffWhite}
+          onClick={() => setIsIntroOffWhite((currentState) => !currentState)}
+        >
+          {isIntroOffWhite ? 'Dark' : 'Off-white'}
+        </button>
         <div className="hero-grid" aria-hidden="true"></div>
         <div className="hero-glow" aria-hidden="true"></div>
         <canvas ref={canvasRef} className="data-globe" aria-hidden="true"></canvas>
@@ -1429,9 +1620,8 @@ function App() {
         <div className="hero-content">
           <p className="hero-kicker">DME-BI | Delivering Meaningful Experience</p>
           <h1 ref={titleRef} id="welcome-title">
-            <span>Centralized</span>
-            <span className="title-gradient">Transformation</span>
-            <span>Ecosystem.</span>
+            <span>Dream Tonight.</span>
+            <span className="title-gradient">Engineering Tomorrow.</span>
           </h1>
           <div className="hero-rule" aria-hidden="true"></div>
           <p ref={copyRef} className="hero-copy">
@@ -1634,35 +1824,12 @@ function App() {
       </section>
       {/* Page 07 end: thank you */}
 
-      {/* Page 08 begin: closing globe */}
-      <section
-        id={PAGE_IDS.opening}
-        data-page-id={PAGE_IDS.opening}
-        ref={(section) => {
-          sectionRefs.current[7] = section
-        }}
-        className="blank-section page-opening-globe"
-        aria-label="Closing global network page"
-      >
-        <RandomStars />
-        <OpeningGlobe />
-        <div className="globe-vignette" aria-hidden="true" />
-        <div className="globe-hero-text">
-          <p className="globe-tagline">REAL-TIME • GLOBAL • CONNECTED</p>
-          <p className="globe-sub-tagline">Secure • Scalable • Intelligent</p>
-          <button className="globe-scroll-btn" aria-label="Closing section indicator">
-            <span className="material-symbols-outlined">expand_more</span>
-          </button>
-        </div>
-      </section>
-      {/* Page 08 end: closing globe */}
-
-      {/* Page 09 begin: TLDR */}
+      {/* Page 08 begin: TLDR */}
       <section
         id={PAGE_IDS.tldr}
         data-page-id={PAGE_IDS.tldr}
         ref={(section) => {
-          sectionRefs.current[8] = section
+          sectionRefs.current[7] = section
         }}
         className="tldr-section page-tldr"
         aria-labelledby="tldr-title"
@@ -1708,7 +1875,30 @@ function App() {
           ))}
         </div>
       </section>
-      {/* Page 09 end: TLDR */}
+      {/* Page 08 end: TLDR */}
+
+      {/* Page 09 begin: closing globe */}
+      <section
+        id={PAGE_IDS.opening}
+        data-page-id={PAGE_IDS.opening}
+        ref={(section) => {
+          sectionRefs.current[8] = section
+        }}
+        className="blank-section page-opening-globe"
+        aria-label="Closing global network page"
+      >
+        <RandomStars />
+        <OpeningGlobe />
+        <div className="globe-vignette" aria-hidden="true" />
+        <div className="globe-hero-text">
+          <p className="globe-tagline">REAL-TIME • GLOBAL • CONNECTED</p>
+          <p className="globe-sub-tagline">Secure • Scalable • Intelligent</p>
+          <button className="globe-scroll-btn" aria-label="Closing section indicator">
+            <span className="material-symbols-outlined">expand_more</span>
+          </button>
+        </div>
+      </section>
+      {/* Page 09 end: closing globe */}
     </main>
   )
 }
